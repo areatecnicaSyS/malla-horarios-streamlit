@@ -16,8 +16,7 @@ st.set_page_config(
 # ---------------------------------------------------------
 # SISTEMA DE AUTENTICACIÓN (CONTRASEÑA)
 # ---------------------------------------------------------
-# Puedes cambiar la contraseña aquí abajo por la que prefieras
-PASSWORD_CORRECTA = "1234" 
+PASSWORD_CORRECTA = "1234"  # Puedes cambiar la contraseña aquí si lo deseas
 
 def verificar_password():
     """Función para validar la contraseña de acceso"""
@@ -25,12 +24,11 @@ def verificar_password():
         st.session_state.autenticado = False
 
     if not st.session_state.autenticado:
-        # Contenedor centrado para el login
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.markdown("<br><br>", unsafe_allow_html=True)
             st.markdown("## 🔐 Acceso Restringido")
-            st.markdown("Por favor, ingresa la contraseña para acceder al generador de horarios.")
+            st.markdown("Por favor, ingresa la contraseña para acceder al sistema.")
             
             password_input = st.text_input("Contraseña", type="password", placeholder="Ingresa tu clave...")
             
@@ -43,26 +41,22 @@ def verificar_password():
         return False
     return True
 
-# Si no está autenticado, detener la ejecución aquí
+# Detener ejecución si no está autenticado
 if not verificar_password():
     st.stop()
 
 # ---------------------------------------------------------
-# LOGOTIPO Y ENCABEZADO (Una vez superado el login)
+# LOGOTIPO Y ENCABEZADO
 # ---------------------------------------------------------
-# O puedes usar una URL pública de imagen, ej: "https://tu-sitio.com/logo.png"
-# Si prefieres subirlo localmente, asegúrate de colocar el archivo de tu logo en la misma carpeta.
-LOGO_PATH = "logo.png"  # Cambia esto por la ruta de tu logo (ej. "logo.png" o "logo.jpg")
+LOGO_PATH = "imagen_circular_recortada (12).png"
 
-col_logo, col_titulo = st.columns([1, 5])
+col_logo, col_titulo = st.columns([1, 6])
 
 with col_logo:
     try:
-        # Intenta mostrar la imagen si existe en la carpeta del proyecto
-        st.image(LOGO_PATH, width=120)
+        st.image(LOGO_PATH, width=110)
     except:
-        # Si no encuentra la imagen, muestra un icono por defecto
-        st.markdown("### 🏢 [Logo]")
+        st.markdown("### 🏢")
 
 with col_titulo:
     st.title("Generador Automático de Malla de Horarios")
@@ -84,7 +78,7 @@ if "malla_semanal" not in st.session_state:
 # ---------------------------------------------------------
 st.sidebar.header("⚙️ 1. Gestión de Personal")
 
-# Opción para cerrar sesión en la barra lateral
+# Botón para cerrar sesión
 if st.sidebar.button("🔒 Cerrar Sesión", use_container_width=True):
     st.session_state.autenticado = False
     st.rerun()
