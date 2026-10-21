@@ -8,13 +8,67 @@ import io
 # CONFIGURACIÓN DE LA PÁGINA
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Generador de Malla de Horarios",
+    page_title="Gestión de Malla de Horarios",
     page_icon="📅",
     layout="wide"
 )
 
-st.title("📅 Generador Automático de Malla de Horarios")
-st.markdown("Gestiona tu personal, define el lapso de tiempo y genera automáticamente los horarios de cada semana.")
+# ---------------------------------------------------------
+# SISTEMA DE AUTENTICACIÓN (CONTRASEÑA)
+# ---------------------------------------------------------
+# Puedes cambiar la contraseña aquí abajo por la que prefieras
+PASSWORD_CORRECTA = "1234" 
+
+def verificar_password():
+    """Función para validar la contraseña de acceso"""
+    if "autenticado" not in st.session_state:
+        st.session_state.autenticado = False
+
+    if not st.session_state.autenticado:
+        # Contenedor centrado para el login
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            st.markdown("## 🔐 Acceso Restringido")
+            st.markdown("Por favor, ingresa la contraseña para acceder al generador de horarios.")
+            
+            password_input = st.text_input("Contraseña", type="password", placeholder="Ingresa tu clave...")
+            
+            if st.button("Ingresar", type="primary", use_container_width=True):
+                if password_input == PASSWORD_CORRECTA:
+                    st.session_state.autenticado = True
+                    st.rerun()
+                else:
+                    st.error("Contraseña incorrecta. Inténtalo de nuevo.")
+        return False
+    return True
+
+# Si no está autenticado, detener la ejecución aquí
+if not verificar_password():
+    st.stop()
+
+# ---------------------------------------------------------
+# LOGOTIPO Y ENCABEZADO (Una vez superado el login)
+# ---------------------------------------------------------
+# O puedes usar una URL pública de imagen, ej: "https://tu-sitio.com/logo.png"
+# Si prefieres subirlo localmente, asegúrate de colocar el archivo de tu logo en la misma carpeta.
+LOGO_PATH = "logo.png"  # Cambia esto por la ruta de tu logo (ej. "logo.png" o "logo.jpg")
+
+col_logo, col_titulo = st.columns([1, 5])
+
+with col_logo:
+    try:
+        # Intenta mostrar la imagen si existe en la carpeta del proyecto
+        st.image(LOGO_PATH, width=120)
+    except:
+        # Si no encuentra la imagen, muestra un icono por defecto
+        st.markdown("### 🏢 [Logo]")
+
+with col_titulo:
+    st.title("Generador Automático de Malla de Horarios")
+    st.markdown("Área Técnica Servicios y Soluciones Tecnológicas — Gestión de Personal y Turnos")
+
+st.divider()
 
 # ---------------------------------------------------------
 # INICIALIZACIÓN DEL SESSION STATE
@@ -29,6 +83,13 @@ if "malla_semanal" not in st.session_state:
 # BARRA LATERAL (SIDEBAR): CONFIGURACIÓN
 # ---------------------------------------------------------
 st.sidebar.header("⚙️ 1. Gestión de Personal")
+
+# Opción para cerrar sesión en la barra lateral
+if st.sidebar.button("🔒 Cerrar Sesión", use_container_width=True):
+    st.session_state.autenticado = False
+    st.rerun()
+
+st.sidebar.divider()
 
 # Agregar nueva persona
 col_input, col_btn = st.sidebar.columns([3, 1])
@@ -83,10 +144,8 @@ if st.sidebar.button("⚡ Generar Malla Automática", type="primary", use_contai
     elif fecha_fin < fecha_inicio:
         st.error("Rango de fechas inválido.")
     else:
-        # Generar rango de días completos
         rango_dias = pd.date_range(start=fecha_inicio, end=fecha_fin)
         
-        # Agrupar días por número de semana
         semanas_dict = {}
         for dia in rango_dias:
             num_semana = dia.isocalendar()[1]
@@ -99,29 +158,22 @@ if st.sidebar.button("⚡ Generar Malla Automática", type="primary", use_contai
             
         malla_generada = {}
         
-        # Personas disponibles para rotación
         personal_list = list(st.session_state.personal)
-        cant_personas = len(personal_list)
         idx_rotacion = 0
-
         opciones_asignacion = turnos_lista + ["Descanso"]
 
         for semana, lista_dias in semanas_dict.items():
-            # Crear encabezados de columnas: 'Lunes 12/10', 'Martes 13/10', etc.
             dias_headers = [d.strftime("%A %d/%m").capitalize() for d in lista_dias]
             
-            # Matriz de asignaciones [Personal x Días]
             matriz = []
             for i, p in enumerate(personal_list):
                 fila_persona = []
                 for d_idx, dia_obj in enumerate(lista_dias):
-                    # Asignar turno de forma rotativa y equitativa
                     turno_asignado = opciones_asignacion[(idx_rotacion + i + d_idx) % len(opciones_asignacion)]
                     fila_persona.append(turno_asignado)
                 matriz.append(fila_persona)
                 
-            idx_rotacion += 1  # Rotar para la siguiente semana
-            
+            idx_rotacion += 1
             df_semana = pd.DataFrame(matriz, index=personal_list, columns=dias_headers)
             malla_generada[semana] = df_semana
 
@@ -141,7 +193,6 @@ if st.session_state.malla_semanal:
             st.markdown(f"#### 📌 Horarios de la **{semana_nombre}**")
             st.caption("Puedes editar directamente cualquier celda si necesitas hacer un cambio puntual.")
             
-            # Editor interactivo de datos
             df_editado = st.data_editor(
                 df_sem,
                 use_container_width=True,
@@ -157,11 +208,9 @@ if st.session_state.malla_semanal:
     st.subheader("📥 Exportar Malla Completa")
     col_dl1, col_dl2 = st.columns(2)
     
-    # Exportar a Excel con múltiples pestañas (una por semana)
     output_excel = io.BytesIO()
     with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
         for sem_name, df_data in st.session_state.malla_semanal.items():
-            # Limpiar nombre de hoja para Excel
             sheet_title = sem_name.replace(" (", "_").replace(")", "")
             df_data.to_excel(writer, sheet_name=sheet_title)
             
@@ -175,7 +224,6 @@ if st.session_state.malla_semanal:
         use_container_width=True
     )
     
-    # Exportar consolidado a CSV
     lista_dfs = []
     for sem_name, df_data in st.session_state.malla_semanal.items():
         df_temp = df_data.copy()
